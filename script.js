@@ -2,8 +2,8 @@
   修改文字速查：
   - 信纸正文：script.js 大概第 9 行开始，改下面 letter 里的内容。
   - 问题和两个选项：index.html 大概第 61-65 行。
-  - 点“再想想”后的挽留语：script.js 大概第 162 行。
-  - 打字速度：script.js 大概第 133 行，数字越小显示越快。
+  - 点“再想想”后的挽留语：script.js 大概第 185 行。
+  - 打字速度：script.js 大概第 156 行，数字越小显示越快。
 */
 
 const letter = `致吴彦娇：
@@ -42,6 +42,7 @@ let typedIndex = 0;
 let noCount = 0;
 let fireworksRunning = false;
 let hasOpened = false;
+let musicStarted = false;
 
 const decorativeTones = ["#f283a1", "#ffd9de", "#fff3c8", "#eeb5ca", "#f7a6b6"];
 
@@ -78,20 +79,42 @@ function showScreen(screen) {
   });
 }
 
-async function startMusic() {
-  try {
-    bgm.volume = 0.82;
-    bgm.currentTime = Math.max(0, bgm.currentTime);
-    await bgm.play();
-  } catch {
-    app.addEventListener(
-      "touchstart",
-      () => {
-        bgm.play().catch(() => {});
-      },
-      { once: true, passive: true }
-    );
+function startMusic() {
+  if (musicStarted) {
+    return;
   }
+
+  bgm.volume = 0.82;
+  bgm.currentTime = Math.max(0, bgm.currentTime);
+
+  const playTask = bgm.play();
+  if (playTask && typeof playTask.then === "function") {
+    playTask
+      .then(() => {
+        musicStarted = true;
+      })
+      .catch(() => {});
+    return;
+  }
+
+  musicStarted = true;
+}
+
+function setupMusicAutoplay() {
+  const unlockMusic = () => startMusic();
+
+  document.addEventListener("WeixinJSBridgeReady", unlockMusic, { once: true });
+  document.addEventListener("touchstart", unlockMusic, {
+    once: true,
+    capture: true,
+    passive: true,
+  });
+  document.addEventListener("pointerdown", unlockMusic, {
+    once: true,
+    capture: true,
+    passive: true,
+  });
+  document.addEventListener("click", unlockMusic, { once: true, capture: true });
 }
 
 function openLetter() {
@@ -333,6 +356,8 @@ function runFireworks() {
 
 makeFloaters();
 bgm.load();
+setupMusicAutoplay();
+startMusic();
 
 envelopeScreen.addEventListener("pointerdown", openLetter);
 envelopeScreen.addEventListener("click", openLetter);
